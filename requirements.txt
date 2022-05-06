@@ -5,3 +5,4 @@ requests==2.27.1
 lxml==4.8.0
 fake-useragent==0.1.11
 bs4
+progress==1.6
