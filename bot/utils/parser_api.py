@@ -2,8 +2,6 @@ import asyncio
 import aiohttp
 import json
 import fake_useragent
-from progress.bar import Bar
-from progress.spinner import PieSpinner
 from datetime import datetime
 
 
@@ -11,15 +9,23 @@ UA = fake_useragent.UserAgent()
 NAME = 'python'
 
 
-async def get_gather(
-    text,
-    params = {
-        'text' : f'NAME:{NAME}',
-        'per_page' : 100}):
+async def get_gather(text, today):
     
+    now = datetime.now().strftime('%Y-%m-%d')
     url = f'https://api.hh.ru/vacancies'
     headers = {'User-agent' : UA.random}
-    params = params
+
+    if today:
+        params = {
+            'text' : f'NAME:{text}',
+            'per_page': 20,
+            'date_from' : f'{now}'
+            }
+    else:
+        params = {
+            'text' : f'NAME:{NAME}',
+            'per_page' : 90
+            }
 
     async with aiohttp.ClientSession() as session:
 
@@ -34,7 +40,7 @@ async def get_gather(
             items = int(json.loads(await response.text())['found'])
 
             for page in range(pages):
-                task = asyncio.create_task(get_vacancies(session, page, text, items))
+                task = asyncio.create_task(get_vacancies(session, page, text, today))
                 tasks.append(task)
             
             print(f'[+] Found {items} vacansies in {pages+1} pages')
@@ -43,14 +49,25 @@ async def get_gather(
             print(f'[-] Exception {e}')
 
 
-async def get_vacancies(session, page, text, items):
+async def get_vacancies(session, page, text, today):
 
+    now = datetime.now().strftime('%Y-%m-%d')
     url = f'https://api.hh.ru/vacancies'
     headers = {'User-agent' : UA.random}
-    params = {
-        'text' : f'NAME:{text}',
-        'page' : page,
-        'per_page': 100}
+
+    if today:
+        params = {
+            'text' : f'NAME:{text}',
+            'page' : page,
+            'per_page': 20,
+            'date_from' : f'{now}'
+            }
+    else:
+        params = {
+            'text' : f'NAME:{text}',
+            'page' : page,
+            'per_page': 90
+            }
     
     async with session.get(url=url, headers=headers,params=params) as response:
 
@@ -64,38 +81,30 @@ async def get_vacancies(session, page, text, items):
             for i in range(len(soup)):
                 id.append(soup[i]['id'])
 
-            # bar = Bar('[+] Processing ', max=len(id) )
-            spinner = PieSpinner('[+] Loading ')
-            while items:
+            for i in id:
+                url = f'https://api.hh.ru/vacancies/{i}'
+                headers = {'User-agent' : UA.random}
 
-                for i in id:
-                    url = f'https://api.hh.ru/vacancies/{i}'
-                    headers = {'User-agent' : UA.random}
+                async with session.get(url=url, headers=headers) as response:
 
-                    async with session.get(url=url, headers=headers) as response:
-
-                        if response.status != 200:
-                            print(f'[-] Response status: {response.status}')
+                    if response.status != 200:
+                        print(f'[-] Response status: {response.status}')
 
     
-                        data = json.loads(await response.text())
-                        vacanсy = {
-                            'name' : data['name'],
-                            'link' : data['alternate_url'],
-                            'company' : data['employer']['name'],
-                            'area' : data['area']['name'],
-                            'experience' : data['experience']['name'] if data['experience'] else 'не указан',
-                            'salary' : data['salary']['from'] if data['salary'] else 'не указана',
-                            'skills' : [i['name']  for i in data['key_skills']],
-                            'time' : data['published_at']                            
-                            }
-                    
-                    vacancies.append(vacanсy)
-                    
-                    items -= 1
-                    spinner.next()
-                # bar.next()
-            # bar.finish()         
+                    data = json.loads(await response.text())
+                    vacanсy = {
+                        'name' : data['name'],
+                        'link' : data['alternate_url'],
+                        'company' : data['employer']['name'],
+                        'area' : data['area']['name'],
+                        'experience' : data['experience']['name'] if data['experience'] else 'не указан',
+                        'salary' : data['salary']['from'] if data['salary'] else 'не указана',
+                        'skills' : [i['name']  for i in data['key_skills']],
+                        'time' : data['published_at']                            
+                        }
+                
+                vacancies.append(vacanсy)
+         
         except Exception as e:
             print(f'[-] Exception {e}')
 
@@ -107,7 +116,7 @@ async def get_all(text):
     vacancies = []
         
     try:
-        asyncio.run(get_gather(text))
+        asyncio.run(get_gather(text, today=False))
     except Exception as e:
         print (f'[-] Exceptinon {e}')
     finally:
@@ -126,9 +135,9 @@ async def get_today(text):
         'per_page': 20,
         'date_from' : f'{now}'
         }
-        
+
     try:
-        asyncio.run(get_gather(text,params=params))
+        asyncio.run(get_gather(text,params=params, today=True))
     except Exception as e:
         print (f'[-] Exceptinon {e}')
     finally:
@@ -136,8 +145,26 @@ async def get_today(text):
             json.dump(vacancies, file, ensure_ascii=False, indent=4)
 
 
+
 if __name__ == '__main__':
 
-    get_today(text=NAME)
+    print('[+] Start searching!')
+    vacancies = []
+    now = datetime.now().strftime('%Y-%m-%d')
+    params = {
+        'text' : f'NAME:{NAME}',
+        'per_page': 20,
+        'date_from' : f'{now}'
+        }
+        
+    try:
+        asyncio.run(get_gather(text=NAME,today=True))
+    except Exception as e:
+        print (f'[-] Exceptinon {e}')
+    finally:
+        with open('vacancies_today.json', 'w', encoding='utf-8') as file:
+            json.dump(vacancies, file, ensure_ascii=False, indent=4)
 
-# 1330 items at 0:00:43.541049 
+
+# aiohttp: 1330 items at 0:00:43.541049 
+# requests: 1330 items at 0:05:17.193638
