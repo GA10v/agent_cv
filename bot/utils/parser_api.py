@@ -92,14 +92,18 @@ async def get_vacancies(session, page, text, today):
 
     
                     data = json.loads(await response.text())
+                    
+                    skills = ', '.join([i['name']  for i in data['key_skills']])
+                    skills = skills if skills else 'не указаны'
+                    
                     vacanсy = {
                         'name' : data['name'],
                         'link' : data['alternate_url'],
                         'company' : data['employer']['name'],
                         'area' : data['area']['name'],
                         'experience' : data['experience']['name'] if data['experience'] else 'не указан',
-                        'salary' : data['salary']['from'] if data['salary'] else 'не указана',
-                        'skills' : [i['name']  for i in data['key_skills']],
+                        'salary' : str(data['salary']['from']) if data['salary'] else 'не указана',
+                        'skills' : skills,
                         'time' : data['published_at']                            
                         }
                 
