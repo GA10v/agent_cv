@@ -2,6 +2,7 @@ from db.base import db_start
 from db.base import db_join_user
 from db.base import db_get_vacancy
 from db.base import db_set_like
+from db.base import db_admin_today
 from db.models import Base
 from db.models import User
 from db.models import View

@@ -23,7 +23,7 @@ async def on_startup(_):
 if __name__ == '__main__':
 
     client.register_message_handler_client(dp)
-    # admin.register_handler_admin(dp)
+    admin.register_handler_admin(dp)
 
     executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
 

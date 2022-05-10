@@ -21,8 +21,12 @@ def db_start():
             with open('vacancies_today.json', 'r', encoding='utf-8') as file:
                 vacancies = json.load(file)
         else:
-            with open('vacancies.json', 'r', encoding='utf-8') as file:
-                vacancies = json.load(file)
+            try:
+                with open('vacancies.json', 'r', encoding='utf-8') as file:
+                    vacancies = json.load(file)
+            except Exception as e:
+                with open('vacancies_today.json', 'r', encoding='utf-8') as file:
+                    vacancies = json.load(file)
 
         bar = Bar(f'[+] Processing: ', max=len(vacancies))
         for vacancy in vacancies:
@@ -68,7 +72,7 @@ def db_set_vacavcies(table, vacancy):
 
 
 '''___________________________________________________________________________________'''
-def db_admin_today():
+async def db_admin_today():
 
     with open('vacancies_today.json', 'r', encoding='utf-8') as file:
         vacancies = json.load(file)
