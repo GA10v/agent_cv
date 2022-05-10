@@ -1,12 +1,12 @@
 from aiogram import Bot
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
-from db.base1 import sql_start1
+from utils.config import NAME
+from db import db_start
 
 from handlers import admin, client
-from utils import start_parsing
-
-from utils.create_bot import bot, dp
+from utils import get_today
+from utils import dp
 
 
 async def on_startup(_):
@@ -15,15 +15,15 @@ async def on_startup(_):
     '''
 
     print('[+] Bot is running!')
-    await start_parsing()
+    await get_today(NAME)
+    db_start()
     print('[+] Bot online!')
-    sql_start1()
 
 
 if __name__ == '__main__':
 
     client.register_message_handler_client(dp)
-    admin.register_handler_admin(dp)
+    # admin.register_handler_admin(dp)
 
     executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
 
