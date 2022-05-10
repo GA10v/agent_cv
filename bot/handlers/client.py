@@ -1,7 +1,9 @@
 from aiogram import types
 from aiogram import Dispatcher
+from db import db_set_like
+from db import db_get_vacancy
 from utils.create_bot import bot
-from db import sql_read, sql_client
+from db import db_join_user
 from keyboards import c_kb
 
 
@@ -15,7 +17,8 @@ async def client_start(message : types.Message):
         await message.reply('Напишите боту в ЛС:\nhttps://t.me/HH_parser_for_CVbot')
     
     try:
-       sql_client(message)
+       db_join_user(message)
+       
     except Exception as e:
         await bot.send_message(message.from_user.id, f'{message.from_user.first_name}, что-то пошло не так! {e}')
         raise e
@@ -25,7 +28,13 @@ async def get_vacancies(message : types.Message):
     ''''''
 
     await message.delete()
-    await sql_read(message)
+    await db_get_vacancy(message)
+
+async def set_like(message : types.Message):
+    ''''''
+
+    await message.delete()
+    await db_set_like(message)
 
 
 def register_message_handler_client(dp : Dispatcher):
@@ -36,4 +45,5 @@ def register_message_handler_client(dp : Dispatcher):
 
     dp.register_message_handler(client_start, commands=['Start', 'Help', 'End'])
     dp.register_message_handler(get_vacancies, commands=['Run'])
+    dp.register_message_handler(set_like, commands=['like'])
 

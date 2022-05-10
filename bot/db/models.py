@@ -22,7 +22,7 @@ class Base(BaseModel):
     experience = TextField()
     salary = CharField()
     skills = TextField()
-    time = TextField()
+    time = TimeField()
 
 
 class User(BaseModel):

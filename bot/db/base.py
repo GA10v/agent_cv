@@ -1,15 +1,21 @@
-from models import *
+from django import views
+from db.models import Base, User, View, Like, db
+from peewee import *
 import json
 from progress.bar import Bar
 import aiogram.utils.markdown as fmt
 from aiogram import types
+from utils import bot
 
 
 def db_start():
     try:
         db.connect()
         base = Base()
-        db.create_tables([base])
+        users = User()
+        views = View()
+        likes = Like()
+        db.create_tables([base,users,views,likes])
 
         if base.select().count() > 1:
             with open('vacancies_today.json', 'r', encoding='utf-8') as file:
@@ -42,55 +48,39 @@ def db_start():
         print(f'[-] {e}')
 
 
-# '''___________________________________________________________________________________'''
-# def db_set_vacavcies(table, vacancy):
+'''___________________________________________________________________________________'''
+def db_set_vacavcies(table, vacancy):
 
-#     flag = True
-#     old_vc = table.select()
-#     links = []
+    flag = True
+    old_vc = table.select()
+    links = []
 
-#     for vc in old_vc:
-#         links.append(vc.link)
+    for vc in old_vc:
+        links.append(vc.link)
 
-#     if vacancy['link'] in links:
-#         flag = False
+    if vacancy['link'] in links:
+        flag = False
 
-#     if flag:
-#         with db:
-#             table.insert(vacancy).execute()
-# '''___________________________________________________________________________________'''
-
-
-# '''___________________________________________________________________________________'''
-# def db_admin_today():
-
-#     with open('vacancies_today.json', 'r', encoding='utf-8') as file:
-#         vacancies = json.load(file)
-
-#     base = Base()
-
-#     bar = Bar(f'[+] Processing: ', max=len(vacancies))
-#     for vacancy in vacancies:
-#         db_set_vacavcies(base, vacancy)
-#         bar.next()
-#     bar.finish()
-# '''___________________________________________________________________________________'''
+    if flag:
+        with db:
+            table.insert(vacancy).execute()
+'''___________________________________________________________________________________'''
 
 
-# '''___________________________________________________________________________________'''
-# def db_admin_all():
+'''___________________________________________________________________________________'''
+def db_admin_today():
 
-#     with open('vacancies.json', 'r', encoding='utf-8') as file:
-#         vacancies = json.load(file)
+    with open('vacancies_today.json', 'r', encoding='utf-8') as file:
+        vacancies = json.load(file)
 
-#     base = Base()
-    
-#     bar = Bar(f'[+] Processing: ', max=len(vacancies))
-#     for vacancy in vacancies:
-#         db_set_vacavcies(base, vacancy)
-#         bar.next()
-#     bar.finish()
-# '''___________________________________________________________________________________'''
+    base = Base()
+
+    bar = Bar(f'[+] Processing: ', max=len(vacancies))
+    for vacancy in vacancies:
+        db_set_vacavcies(base, vacancy)
+        bar.next()
+    bar.finish()
+'''___________________________________________________________________________________'''
 
 
 def db_join_user(message):
@@ -103,7 +93,7 @@ def db_join_user(message):
     return user
 
 
-def db_get_vacancy(message):
+async def db_get_vacancy(message):
 
     user = db_join_user(message)
     views_list = []
@@ -112,10 +102,12 @@ def db_get_vacancy(message):
     for i in view:
         views_list.append(i.link_id)
     
-    vacancy = Base.select().where(Base.link.not_in(views_list)).get()
+    vacancy = Base.select().where(Base.link.not_in(views_list)).order_by(Base.time.desc()).get()
+
+    View.create(user_id = user.id, link_id=vacancy.link)
         
     mes = fmt.text(
-        fmt.text(fmt.hlink(vacancy.link, vacancy.name)),
+        fmt.text(fmt.hlink(vacancy.name, vacancy.link)),
         fmt.text(fmt.hunderline('Компания: '), vacancy.company),
         fmt.text(fmt.hunderline('Расположение: '), vacancy.area),
         fmt.text(fmt.hunderline('Зарплата: '), vacancy.salary),
@@ -124,13 +116,15 @@ def db_get_vacancy(message):
         sep='\n')
 
 
-    # await bot.send_message(message.from_user.id, mes, parse_mode=types.ParseMode.HTML)
+    await bot.send_message(message.from_user.id, mes, parse_mode=types.ParseMode.HTML)
     
-    View.create(user_id = user.id, link_id=vacancy.link)
 
+async def db_set_like(message):
 
-def db_set_like(message):
+    try:
+        user = db_join_user(message)
+        vacancy = View.select().where(user.id == View.user_id).order_by(View.id.desc()).get()       
+        Like.create(user_id = user.id, link_id=vacancy.link_id)
+    except IntegrityError as er:
+        print('[-] ... ')
 
-    user = db_join_user(message)
-    vacancy = View.select().where(user.id == View.user_id).order_by(View.id.desc()).get()       
-    Like.create(user_id = user.id, link_id=vacancy.link_id)
