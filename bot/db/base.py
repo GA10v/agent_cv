@@ -132,3 +132,31 @@ async def db_set_like(message):
     except IntegrityError as er:
         print('[-] ... ')
 
+
+def db_get_like(message):
+    user = db_join_user(message)
+    like_list = []
+    likes = Like.select().where(user.id == Like.user_id)
+
+    for i in likes:
+        like_list.append(i.link_id)
+    
+    vacancies = Base.select().where(Base.link.in_(like_list)).order_by(Base.time.desc())
+    like_list = []
+
+    for vacancy in vacancies:
+        
+        mes = f'''
+        Должность: {vacancy.name}
+        Компания: {vacancy.company}
+        Расположение: {vacancy.area}
+        Зарплата: {vacancy.salary}
+        Требуемые знания: {vacancy.skills}
+        Опыт работы: {vacancy.experience}
+        Ссылка: {vacancy.link}
+        ===============================================
+        '''
+
+        like_list.append(mes)
+    Like.delete().where(user.id == Like.user_id).execute()
+    return ''.join(like_list)
