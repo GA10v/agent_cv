@@ -3,3 +3,4 @@ asyncio==3.4.3
 aiohttp==3.8.1
 fake-useragent==0.1.11
 peewee==3.14.10
+progress==1.6

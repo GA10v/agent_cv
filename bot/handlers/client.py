@@ -17,7 +17,11 @@ async def client_start(message : types.Message):
     ''''''
 
     try:
-        await bot.send_message(message.from_user.id, f'Привет, {message.from_user.full_name}! Начнем поиск работы!', reply_markup=c_kb)
+        await bot.send_message(message.from_user.id, f'Привет, {message.from_user.full_name}! Я бот по поиску вакансий на сайте hh.ru.\n\n\
+\\Run - выдает очередную вакансию;\n\
+\\Like - сохраняет вакансию в список избранных;\n\
+\\Send - отправит избраные вакансии тебе на почту.\n\n\
+                Начнем поиск работы!', reply_markup=c_kb)
         await message.delete()
     except:
         await message.reply('Напишите боту в ЛС:\nhttps://t.me/HH_parser_for_CVbot')
